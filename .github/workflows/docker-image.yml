@@ -25,20 +25,3 @@ jobs:
       - name: Push Image to Registry
         run: |
           docker push registry.kedi-server.de/printer-que:latest
-
-  build-octoprint-image:
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Build Image
-        run: |
-          cd octoprint
-          docker build -t registry.kedi-server.de/octoprint:latest .
-
-      - name: Push Image
-        run: |
-          docker push registry.kedi-server.de/octoprint:latest
