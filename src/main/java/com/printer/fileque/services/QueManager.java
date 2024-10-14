@@ -1,5 +1,7 @@
 package com.printer.fileque.services;
 
+import com.printer.fileque.entities.CurrentPrint;
+import com.printer.fileque.repos.CurrentPrintRepo;
 import org.springframework.beans.factory.annotation.Value;
 import com.printer.fileque.entities.FileQueCollection;
 import com.printer.fileque.entities.PrintFile;
@@ -33,6 +35,7 @@ public class QueManager {
     private final RestTemplate restTemplate = new RestTemplate();
 
     private final PrintFileRepo printFileRepo;
+    private final CurrentPrintRepo currentPrintRepo;
 
     private final FileQueCollection fileQueCollection;
     private final MinioService minioService;
@@ -42,12 +45,16 @@ public class QueManager {
 
     private boolean isManagingQue = false;
 
-    public QueManager(@Value("${octoprint.api-url}") String octoprintApiUrl, @Value("${octoprint.api-key}") String octoprintApiKey, FileQueCollection fileQueCollection, PrintFileRepo printFileRepo, MinioService minioService) {
+    private CurrentPrint currentPrint;
+
+    public QueManager(@Value("${octoprint.api-url}") String octoprintApiUrl, @Value("${octoprint.api-key}") String octoprintApiKey, FileQueCollection fileQueCollection, PrintFileRepo printFileRepo, MinioService minioService, CurrentPrintRepo currentPrintRepo) {
         this.octoprintApiUrl = octoprintApiUrl;
         this.octoprintApiKey = octoprintApiKey;
         this.fileQueCollection = fileQueCollection;
         this.printFileRepo = printFileRepo;
         this.minioService = minioService;
+        this.currentPrintRepo = currentPrintRepo;
+        this.currentPrint = null;
 
         List<PrintFile> printFiles = printFileRepo.findAll();
         fileQueCollection.setPrintQue(printFiles);
@@ -76,11 +83,14 @@ public class QueManager {
                     case OPERATIONAL:
                         PrintFile nextPrintFile = fileQueCollection.getNexFile();
                         logger.info("Starte Druck: {}", nextPrintFile.getFileName());
+                        CurrentPrint newCurrentPrint = currentPrintRepo.save(new CurrentPrint(nextPrintFile));
+                        this.currentPrint = newCurrentPrint;
                         startPrint(nextPrintFile.getFileName());
-                        printFileRepo.delete(nextPrintFile);
                         break;
                     case FINISHED:
                         logger.info("Druck abgeschlossen! Schiebe Druck vom Bett.");
+                        printFileRepo.delete(this.currentPrint.getPrintFile());
+                        currentPrintRepo.delete(this.currentPrint);
                         sendGCodeCommands(new String[]{"G0 X110 Y220 Z5", "G0 Y0", "G0 Y220"});
                         break;
                     case UNKNOWN:
