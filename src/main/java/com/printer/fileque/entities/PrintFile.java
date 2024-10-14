@@ -1,10 +1,13 @@
 package com.printer.fileque.entities;
 
+import com.printer.fileque.dtos.NewPrintFileDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.UUID;
 
 @Table(name = "print_files")
 @AllArgsConstructor
@@ -18,10 +21,13 @@ public class PrintFile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
+    private UUID orderId;
+
     private String fileName;
 
 
-    public PrintFile(String filename) {
-        this.fileName = filename;
+    public PrintFile(NewPrintFileDto printFileDto) {
+        this.orderId = printFileDto.getOrderId();
+        this.fileName = printFileDto.getFilename();
     }
 }

@@ -1,5 +1,6 @@
 package com.printer.fileque.controller;
 
+import com.printer.fileque.dtos.NewPrintFileDto;
 import com.printer.fileque.dtos.ResponseDto;
 import com.printer.fileque.entities.FileQueCollection;
 import com.printer.fileque.entities.PrintFile;
@@ -31,23 +32,23 @@ public class FileQueController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<ResponseDto<String>> addFileToQue(@RequestBody String filename) {
+    public ResponseEntity<ResponseDto<String>> addFileToQue(@RequestBody NewPrintFileDto printFileDto) {
 
-        PrintFile printFile = printFileRepo.save(new PrintFile(filename));
+        PrintFile printFile = printFileRepo.save(new PrintFile(printFileDto));
         fileQueCollection.addToPrintQue(printFile);
-        logger.info("Added new File to Printer Queue: "+ filename);
+        logger.info("Added new File to Printer Queue: " + printFileDto.getFilename());
 
         new Thread(() -> {
             try {
                 queManager.managePrintQueue();
-            }catch (InterruptedException e){
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }).start();
 
-        ResponseDto<String> responseDto = ResponseDtoCreator.createResponseDto("File added to queue: " + filename);
+        ResponseDto<String> responseDto = ResponseDtoCreator.createResponseDto("File added to queue: " + printFileDto.getFilename());
         return ResponseEntity.ok(responseDto);
     }
 }
