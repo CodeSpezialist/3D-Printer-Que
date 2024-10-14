@@ -1,5 +1,6 @@
 package com.printer.fileque;
 
+import com.printer.fileque.entities.FileQueCollection;
 import com.printer.fileque.services.QueManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -17,17 +18,16 @@ public class FileQueApplication implements CommandLineRunner {
     @Value("${octoprint.api-key}")
     private String octoprintApiKey;
 
-    public static void main(String[] args) {
+    private final FileQueCollection fileQueCollection = new FileQueCollection();
 
+    public static void main(String[] args) {
         SpringApplication.run(FileQueApplication.class, args);
     }
 
     @Override
     public void run(String... args) throws Exception {
-
-        QueManager queManager = new QueManager(octoprintApiUrl,octoprintApiKey);
-
+        // Keine Instanziierung hier
+        QueManager queManager = new QueManager(octoprintApiUrl, octoprintApiKey, fileQueCollection); // Initialisierung hier
         queManager.managePrintQueue();
     }
-
 }

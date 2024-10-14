@@ -1,5 +1,6 @@
 package com.printer.fileque.services;
 
+import com.printer.fileque.entities.FileQueCollection;
 import com.printer.fileque.enums.Endpoints;
 import com.printer.fileque.enums.PrinterState;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
@@ -16,8 +17,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
-import java.util.LinkedList;
-import java.util.Queue;
 
 public class QueManager {
 
@@ -26,24 +25,25 @@ public class QueManager {
     private static final int WAIT_TIME_MS = 30000; // 30 Sekunden
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final Queue<String> printQueue = new LinkedList<>();
+    private final FileQueCollection fileQueCollection;
 
     private final String octoprintApiUrl;
     private final String octoprintApiKey;
 
-    public QueManager(String octoprintApiUrl, String octoprintApiKey) {
+    public QueManager(String octoprintApiUrl, String octoprintApiKey, FileQueCollection fileQueCollection) {
         this.octoprintApiUrl = octoprintApiUrl;
         this.octoprintApiKey = octoprintApiKey;
+        this.fileQueCollection = fileQueCollection;
 
         // Beispielhafte Dateien zur Warteschlange hinzufügen
         String exampleFilePath = "C:/Users/kenod/OneDrive/3D Drucker/9,7mmGewinde.gcode";
-        printQueue.add(exampleFilePath);
-        printQueue.add(exampleFilePath);
-        printQueue.add(exampleFilePath);
+        fileQueCollection.addToPrintQue(exampleFilePath);
+        fileQueCollection.addToPrintQue(exampleFilePath);
+        fileQueCollection.addToPrintQue(exampleFilePath);
     }
 
     public void managePrintQueue() throws InterruptedException {
-        while (!printQueue.isEmpty()) {
+        while (!fileQueCollection.isQueEmpty()) {
             if (!isPrinterConnected()) {
                 logger.warn("Drucker ist nicht verbunden. Warte auf Verbindung...");
                 Thread.sleep(WAIT_TIME_MS); // Warten, bevor erneut überprüft wird
@@ -55,7 +55,7 @@ public class QueManager {
 
             switch (status) {
                 case OPERATIONAL:
-                    String nextFile = printQueue.poll();  // Nächste Datei aus der Warteschlange holen
+                    String nextFile = fileQueCollection.getNexFile();  // Nächste Datei aus der Warteschlange holen
                     logger.info("Starte Druck: {}", nextFile);
                     startPrint(nextFile);
                     break;
@@ -76,9 +76,11 @@ public class QueManager {
         HttpHeaders headers = createHeaders();
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
+
+        String url = octoprintApiUrl + Endpoints.CONNECTION_STATUS.getUrl();
         try {
             ResponseEntity<String> response = restTemplate.exchange(
-                    octoprintApiUrl + Endpoints.CONNECTION_STATUS.getUrl(),
+                    url,
                     HttpMethod.GET,
                     entity,
                     String.class
