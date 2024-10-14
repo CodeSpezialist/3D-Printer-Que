@@ -26,6 +26,7 @@ public class QueManager {
     private static final String FILE_UPLOAD_ENDPOINT = "/files/local";
     private static final String JOB_STATUS_ENDPOINT = "/job";
     private static final String PRINTER_COMMAND_ENDPOINT = "/printer/command";
+    private static final String CONNECTION_STATUS_ENDPOINT = "/connection"; // Endpoint für Verbindungsstatus
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final Queue<String> printQueue = new LinkedList<>();
@@ -37,7 +38,6 @@ public class QueManager {
         this.octoprintApiUrl = octoprintApiUrl;
         this.octoprintApiKey = octoprintApiKey;
 
-        // TODO Beispieldaten entfernen
         // Beispielhafte Dateien zur Warteschlange hinzufügen
         String exampleFilePath = "C:/Users/kenod/OneDrive/3D Drucker/9,7mmGewinde.gcode";
         printQueue.add(exampleFilePath);
@@ -47,8 +47,13 @@ public class QueManager {
 
     public void managePrintQueue() throws InterruptedException {
         while (!printQueue.isEmpty()) {
-            PrinterState status = getPrinterStatus();
+            if (!isPrinterConnected()) {
+                logger.warn("Drucker ist nicht verbunden. Warte auf Verbindung...");
+                Thread.sleep(WAIT_TIME_MS); // Warten, bevor erneut überprüft wird
+                continue; // Nächste Iteration der Schleife
+            }
 
+            PrinterState status = getPrinterStatus();
             logger.info("Printer Status: {}", status);
 
             switch (status) {
@@ -70,9 +75,31 @@ public class QueManager {
         }
     }
 
+    private boolean isPrinterConnected() {
+        HttpHeaders headers = createHeaders();
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    octoprintApiUrl + CONNECTION_STATUS_ENDPOINT,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            String responseBody = response.getBody();
+            if (responseBody != null && responseBody.contains("\"current\":")) {
+                return responseBody.contains("\"current\":true");
+            }
+        } catch (RestClientException e) {
+            logger.error("Fehler beim Abrufen des Verbindungsstatus: {}", e.getMessage());
+        }
+
+        return false; // Standardwert, wenn der Status nicht abgerufen werden kann
+    }
+
     private PrinterState getPrinterStatus() {
         HttpHeaders headers = createHeaders();
-
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
@@ -95,6 +122,7 @@ public class QueManager {
 
         if (!file.exists() || !file.canRead()) {
             logger.error("Fehler: Die Datei {} existiert nicht oder kann nicht gelesen werden.", filename);
+            return; // Abbrechen, wenn die Datei ungültig ist
         }
 
         // Retry-Logik für Datei-Upload
@@ -113,6 +141,7 @@ public class QueManager {
                 try (CloseableHttpResponse response = httpClient.execute(post)) {
                     if (response.getCode() >= 200 && response.getCode() < 300) {
                         logger.info("File upload successfully and print started for file: {}", filename);
+                        return; // Erfolgreich, Schleife beenden
                     } else {
                         logger.error("Can't upload and print file: {}", filename);
                     }
