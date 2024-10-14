@@ -1,5 +1,6 @@
 package com.printer.fileque.services;
 
+import com.printer.fileque.enums.Endpoints;
 import com.printer.fileque.enums.PrinterState;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
@@ -23,10 +24,6 @@ public class QueManager {
     private static final Logger logger = LoggerFactory.getLogger(QueManager.class);
 
     private static final int WAIT_TIME_MS = 30000; // 30 Sekunden
-    private static final String FILE_UPLOAD_ENDPOINT = "/files/local";
-    private static final String JOB_STATUS_ENDPOINT = "/job";
-    private static final String PRINTER_COMMAND_ENDPOINT = "/printer/command";
-    private static final String CONNECTION_STATUS_ENDPOINT = "/connection"; // Endpoint für Verbindungsstatus
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final Queue<String> printQueue = new LinkedList<>();
@@ -81,7 +78,7 @@ public class QueManager {
 
         try {
             ResponseEntity<String> response = restTemplate.exchange(
-                    octoprintApiUrl + CONNECTION_STATUS_ENDPOINT,
+                    octoprintApiUrl + Endpoints.CONNECTION_STATUS.getUrl(),
                     HttpMethod.GET,
                     entity,
                     String.class
@@ -103,7 +100,7 @@ public class QueManager {
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                octoprintApiUrl + JOB_STATUS_ENDPOINT,
+                octoprintApiUrl + Endpoints.JOB_STATUS.getUrl(),
                 HttpMethod.GET,
                 entity,
                 String.class
@@ -128,7 +125,7 @@ public class QueManager {
         // Retry-Logik für Datei-Upload
         while (true) {
             try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                HttpPost post = new HttpPost(octoprintApiUrl + FILE_UPLOAD_ENDPOINT);
+                HttpPost post = new HttpPost(octoprintApiUrl + Endpoints.FILE_UPLOAD.getUrl());
                 post.setHeader("Authorization", "Bearer " + octoprintApiKey);
 
                 MultipartEntityBuilder builder = MultipartEntityBuilder.create()
@@ -171,7 +168,7 @@ public class QueManager {
                 String payload = createGCodePayload(gcodeCommands);
                 HttpEntity<String> entity = new HttpEntity<>(payload, headers);
 
-                restTemplate.postForEntity(octoprintApiUrl + PRINTER_COMMAND_ENDPOINT, entity, String.class);
+                restTemplate.postForEntity(octoprintApiUrl + Endpoints.PRINTER_COMMAND.getUrl(), entity, String.class);
                 logger.info("G-Code Befehle gesendet: {}", String.join(", ", gcodeCommands));
                 return; // Erfolgreich, Schleife beenden
             } catch (HttpClientErrorException.Conflict e) {
