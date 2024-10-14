@@ -1,5 +1,3 @@
-RUN docker login dtrurl -u kenodirks@outlook.de -eiX1eu7v1
-
 FROM maven:3.8-openjdk-18 as build
 
 WORKDIR /app
