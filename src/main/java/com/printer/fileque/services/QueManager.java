@@ -1,8 +1,11 @@
 package com.printer.fileque.services;
 
+import org.springframework.beans.factory.annotation.Value;
 import com.printer.fileque.entities.FileQueCollection;
+import com.printer.fileque.entities.PrintFile;
 import com.printer.fileque.enums.Endpoints;
 import com.printer.fileque.enums.PrinterState;
+import com.printer.fileque.repos.PrintFileRepo;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -12,13 +15,14 @@ import org.apache.hc.core5.http.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
-import java.util.Queue;
 
+@Component
 public class QueManager {
 
     private static final Logger logger = LoggerFactory.getLogger(QueManager.class);
@@ -26,50 +30,62 @@ public class QueManager {
     private static final int WAIT_TIME_MS = 30000; // 30 Sekunden
 
     private final RestTemplate restTemplate = new RestTemplate();
+
+    private final PrintFileRepo printFileRepo;
+
     private final FileQueCollection fileQueCollection;
 
     private final String octoprintApiUrl;
     private final String octoprintApiKey;
 
-    public QueManager(String octoprintApiUrl, String octoprintApiKey, FileQueCollection fileQueCollection) {
+    private boolean isManagingQue = false;
+
+    public QueManager(@Value("${octoprint.api-url}") String octoprintApiUrl, @Value("${octoprint.api-key}") String octoprintApiKey, FileQueCollection fileQueCollection, PrintFileRepo printFileRepo) {
         this.octoprintApiUrl = octoprintApiUrl;
         this.octoprintApiKey = octoprintApiKey;
         this.fileQueCollection = fileQueCollection;
-
-        // Beispielhafte Dateien zur Warteschlange hinzufügen
-        String exampleFilePath = "C:/Users/kenod/OneDrive/3D Drucker/9,7mmGewinde.gcode";
-        fileQueCollection.addToPrintQue(exampleFilePath);
-        fileQueCollection.addToPrintQue(exampleFilePath);
-        fileQueCollection.addToPrintQue(exampleFilePath);
+        this.printFileRepo = printFileRepo;
     }
 
-    public void managePrintQueue() throws InterruptedException {
-        while (!fileQueCollection.isQueEmpty()) {
-            if (!isPrinterConnected()) {
-                logger.warn("Drucker ist nicht verbunden. Warte auf Verbindung...");
-                Thread.sleep(WAIT_TIME_MS); // Warten, bevor erneut überprüft wird
-                continue; // Nächste Iteration der Schleife
+    public synchronized void managePrintQueue() throws InterruptedException {
+        if(isManagingQue) {
+            logger.info("Print Queue ist bereits aktiv. Kein neuer Aufruf nötig.");
+            return;
+        }
+
+        isManagingQue = true;
+
+        try {
+            while (!fileQueCollection.isQueEmpty()) {
+                if (!isPrinterConnected()) {
+                    logger.warn("Drucker ist nicht verbunden. Warte auf Verbindung...");
+                    Thread.sleep(WAIT_TIME_MS); // Warten, bevor erneut überprüft wird
+                    continue; // Nächste Iteration der Schleife
+                }
+
+                PrinterState status = getPrinterStatus();
+                logger.info("Printer Status: {}", status);
+
+                switch (status) {
+                    case OPERATIONAL:
+                        PrintFile nextPrintFile = fileQueCollection.getNexFile();
+                        logger.info("Starte Druck: {}", nextPrintFile.getFileName());
+                        startPrint(nextPrintFile.getFileName());
+                        printFileRepo.delete(nextPrintFile);
+                        break;
+                    case FINISHED:
+                        logger.info("Druck abgeschlossen! Schiebe Druck vom Bett.");
+                        sendGCodeCommands(new String[]{"G0 X110 Y220 Z5", "G0 Y0", "G0 Y220"});
+                        break;
+                    case UNKNOWN:
+                        logger.info("Druckerstatus: {}, warte auf freien Drucker...", status);
+                        break;
+                }
+
+                Thread.sleep(WAIT_TIME_MS);
             }
-
-            PrinterState status = getPrinterStatus();
-            logger.info("Printer Status: {}", status);
-
-            switch (status) {
-                case OPERATIONAL:
-                    String nextFile = fileQueCollection.getNexFile();  // Nächste Datei aus der Warteschlange holen
-                    logger.info("Starte Druck: {}", nextFile);
-                    startPrint(nextFile);
-                    break;
-                case FINISHED:
-                    logger.info("Druck abgeschlossen! Schiebe Druck vom Bett.");
-                    sendGCodeCommands(new String[]{"G0 X110 Y220 Z5", "G0 Y0", "G0 Y220"});
-                    break;
-                case UNKNOWN:
-                    logger.info("Druckerstatus: {}, warte auf freien Drucker...", status);
-                    break;
-            }
-
-            Thread.sleep(WAIT_TIME_MS);
+        }finally {
+            isManagingQue = false;
         }
     }
 

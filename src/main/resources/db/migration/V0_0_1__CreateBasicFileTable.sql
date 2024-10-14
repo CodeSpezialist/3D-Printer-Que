@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS print_files
+(
+    id       INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    file_name VARCHAR(200) NOT NULL
+);

@@ -8,17 +8,17 @@ import java.util.Queue;
 @Component
 public class FileQueCollection {
 
-    private final Queue<String> printQue = new LinkedList<>();
+    private final Queue<PrintFile> printQue = new LinkedList<>();
 
-    public void addToPrintQue(String filename) {
-        printQue.add(filename);
+    public void addToPrintQue(PrintFile file) {
+        printQue.add(file);
     }
 
-    public String getNexFile(){
+    public PrintFile getNexFile() {
         return printQue.poll();
     }
 
-    public boolean isQueEmpty(){
+    public boolean isQueEmpty() {
         return printQue.isEmpty();
     }
 }
