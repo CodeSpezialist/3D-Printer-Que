@@ -19,7 +19,7 @@ jobs:
 
       - name: Build Image
         run: |
-          RUN docker login dtrurl -u kenodirks@outlook.de -eiX1eu7v1
+          RUN docker login -u kenodirks@outlook.de -eiX1eu7v1
           docker build -t registry.kedi-server.de/printer-que:latest .
 
       - name: Push Image to Registry
