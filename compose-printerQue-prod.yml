@@ -1,0 +1,34 @@
+services:
+  database:
+    container_name: printerQueDB
+    image: mariadb:latest
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=printerque
+      - MYSQL_PASSWORD=Password1
+      - MYSQL_USER=root
+      - MYSQL_ROOT_PASSWORD=Password1
+    restart: unless-stopped
+    volumes:
+      - printer-que-db:/var/lib/mysql
+    networks:
+      - printer-que
+
+  printer_que:
+    container_name: Printer_Que
+    image: registry.kedi-server.de/printer-que:latest
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      - database
+    networks:
+      - printer-que
+
+
+volumes:
+  printer-que-db:
+
+networks:
+  printer-que:
