@@ -20,6 +20,8 @@ services:
     image: registry.kedi-server.de/printer-que:latest
     ports:
       - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
     restart: unless-stopped
     depends_on:
       - database
