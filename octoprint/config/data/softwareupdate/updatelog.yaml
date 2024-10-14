@@ -1,0 +1,16 @@
+- current_version: 1.9.3
+  datetime: '2024-10-10 16:45:33'
+  display_name: OctoPrint
+  release_notes: https://github.com/OctoPrint/OctoPrint/releases/tag/1.10.2
+  success: true
+  target: octoprint
+  target_version: 1.10.2
+  text: Update successful
+- current_version: 2021.2.23
+  datetime: '2024-10-10 16:47:00'
+  display_name: File Check Plugin
+  release_notes: https://github.com/OctoPrint/OctoPrint-FileCheck/releases/tag/2024.3.27
+  success: true
+  target: file_check
+  target_version: 2024.3.27
+  text: Update successful

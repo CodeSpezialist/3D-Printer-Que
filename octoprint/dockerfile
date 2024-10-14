@@ -1,0 +1,31 @@
+# Verwende ein leichtgewichtiges Python-Image als Basis
+FROM python:3.9-slim
+
+# Setze Arbeitsverzeichnis
+WORKDIR /octoprint
+
+# Installiere notwendige Abhängigkeiten
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libjpeg-dev \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installiere OctoPrint
+RUN pip install octoprint
+
+# Kopiere Backup-Dateien in das Image
+COPY config/config.yaml /octoprint/config.yaml
+COPY config/logging.yaml /octoprint/logging.yaml
+COPY config/users.yaml /octoprint/users.yaml
+
+# Kopiere Ordner aus dem Backup
+COPY config/data /octoprint/data
+COPY config/printerProfiles /octoprint/printerProfiles
+
+# Exponiere den Standard-Port von OctoPrint
+EXPOSE 5000
+
+# Starte OctoPrint
+CMD ["octoprint", "serve", "--basedir", "/octoprint"]
