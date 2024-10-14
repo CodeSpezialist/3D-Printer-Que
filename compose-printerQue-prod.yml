@@ -17,12 +17,11 @@ services:
 
   octoprint:
     container_name: octoprint
-    image: registry.kedi-server.de/octoprint:latest
+    image: octoprint/octoprint
     ports:
-      - "5000:5000"
+      - "5000:80"
     volumes:
-      - octoprint/data:/octoprint/data
-      - octoprint/profiles:/octoprint/printerProfiles
+      - octoprint:/octoprint
     restart: always
     networks:
       - printer-que
@@ -42,8 +41,8 @@ services:
 
 
 volumes:
-  - printer-que-db:
-  - octoprint:
+  printer-que-db:
+  octoprint:
 
 networks:
   printer-que:

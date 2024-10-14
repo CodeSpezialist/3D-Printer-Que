@@ -1,3 +1,0 @@
-loggers:
-  tornado:
-    level: DEBUG
