@@ -90,55 +90,76 @@ public class QueManager {
         return PrinterState.UNKNOWN;
     }
 
-    private boolean startPrint(String filename) {
+    private void startPrint(String filename) {
         File file = new File(filename);
 
         if (!file.exists() || !file.canRead()) {
             logger.error("Fehler: Die Datei {} existiert nicht oder kann nicht gelesen werden.", filename);
-            return false;
         }
 
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpPost post = new HttpPost(octoprintApiUrl + FILE_UPLOAD_ENDPOINT);
-            post.setHeader("Authorization", "Bearer " + octoprintApiKey);
+        // Retry-Logik für Datei-Upload
+        while (true) {
+            try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                HttpPost post = new HttpPost(octoprintApiUrl + FILE_UPLOAD_ENDPOINT);
+                post.setHeader("Authorization", "Bearer " + octoprintApiKey);
 
-            MultipartEntityBuilder builder = MultipartEntityBuilder.create()
-                    .addBinaryBody("file", file, ContentType.DEFAULT_BINARY, filename)
-                    .addTextBody("select", "true", ContentType.TEXT_PLAIN)
-                    .addTextBody("print", "true", ContentType.TEXT_PLAIN);
+                MultipartEntityBuilder builder = MultipartEntityBuilder.create()
+                        .addBinaryBody("file", file, ContentType.DEFAULT_BINARY, filename)
+                        .addTextBody("select", "true", ContentType.TEXT_PLAIN)
+                        .addTextBody("print", "true", ContentType.TEXT_PLAIN);
 
-            post.setEntity(builder.build());
+                post.setEntity(builder.build());
 
-            try (CloseableHttpResponse response = httpClient.execute(post)) {
-                if (response.getCode() >= 200 && response.getCode() < 300) {
-                    logger.info("File upload successfully and print started for file: {}", filename);
-                    return true;
-                } else {
-                    logger.error("Can't upload and print file: {}", filename);
-                    return false;
+                try (CloseableHttpResponse response = httpClient.execute(post)) {
+                    if (response.getCode() >= 200 && response.getCode() < 300) {
+                        logger.info("File upload successfully and print started for file: {}", filename);
+                    } else {
+                        logger.error("Can't upload and print file: {}", filename);
+                    }
                 }
+            } catch (Exception e) {
+                logger.error("Fehler beim Hochladen der Datei: {}", e.getMessage());
             }
-        } catch (Exception e) {
-            logger.error("Fehler beim Hochladen der Datei: {}", e.getMessage());
-            return false;
+
+            // Wartezeit vor erneutem Versuch
+            try {
+                Thread.sleep(WAIT_TIME_MS);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                logger.error("Interrupted while waiting to retry file upload: {}", ie.getMessage());
+                break; // Bei Unterbrechung aus der Schleife ausbrechen
+            }
         }
     }
 
     private void sendGCodeCommands(String[] gcodeCommands) {
-        try {
-            HttpHeaders headers = createHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+        // Retry-Logik für G-Code-Befehle
+        while (true) {
+            try {
+                HttpHeaders headers = createHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
 
-            String payload = createGCodePayload(gcodeCommands);
-            HttpEntity<String> entity = new HttpEntity<>(payload, headers);
+                String payload = createGCodePayload(gcodeCommands);
+                HttpEntity<String> entity = new HttpEntity<>(payload, headers);
 
-            restTemplate.postForEntity(octoprintApiUrl + PRINTER_COMMAND_ENDPOINT, entity, String.class);
-            logger.info("G-Code Befehle gesendet: {}", String.join(", ", gcodeCommands));
-        } catch (HttpClientErrorException.Conflict e) {
-            logger.error("Konflikt beim Senden der G-Code Befehle: Der Drucker ist nicht betriebsbereit. Antwort: {}", e.getResponseBodyAsString());
-            // Mögliche Reaktion: Warten, Benachrichtigung, Retry-Logik etc.
-        } catch (RestClientException e) {
-            logger.error("Fehler beim Senden der G-Code Befehle: {}", e.getMessage(), e);
+                restTemplate.postForEntity(octoprintApiUrl + PRINTER_COMMAND_ENDPOINT, entity, String.class);
+                logger.info("G-Code Befehle gesendet: {}", String.join(", ", gcodeCommands));
+                return; // Erfolgreich, Schleife beenden
+            } catch (HttpClientErrorException.Conflict e) {
+                logger.error("Konflikt beim Senden der G-Code Befehle: Der Drucker ist nicht betriebsbereit. Antwort: {}", e.getResponseBodyAsString());
+                // Mögliche Wartezeit vor erneutem Versuch
+            } catch (RestClientException e) {
+                logger.error("Fehler beim Senden der G-Code Befehle: {}", e.getMessage(), e);
+            }
+
+            // Wartezeit vor erneutem Versuch
+            try {
+                Thread.sleep(WAIT_TIME_MS);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                logger.error("Interrupted while waiting to retry G-Code commands: {}", ie.getMessage());
+                break; // Bei Unterbrechung aus der Schleife ausbrechen
+            }
         }
     }
 
