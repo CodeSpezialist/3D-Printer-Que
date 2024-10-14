@@ -35,23 +35,25 @@ public class QueManager {
     private final PrintFileRepo printFileRepo;
 
     private final FileQueCollection fileQueCollection;
+    private final MinioService minioService;
 
     private final String octoprintApiUrl;
     private final String octoprintApiKey;
 
     private boolean isManagingQue = false;
 
-    public QueManager(@Value("${octoprint.api-url}") String octoprintApiUrl, @Value("${octoprint.api-key}") String octoprintApiKey, FileQueCollection fileQueCollection, PrintFileRepo printFileRepo) {
+    public QueManager(@Value("${octoprint.api-url}") String octoprintApiUrl, @Value("${octoprint.api-key}") String octoprintApiKey, FileQueCollection fileQueCollection, PrintFileRepo printFileRepo, MinioService minioService) {
         this.octoprintApiUrl = octoprintApiUrl;
         this.octoprintApiKey = octoprintApiKey;
         this.fileQueCollection = fileQueCollection;
         this.printFileRepo = printFileRepo;
+        this.minioService = minioService;
 
         List<PrintFile> printFiles = printFileRepo.findAll();
         fileQueCollection.setPrintQue(printFiles);
     }
 
-    public synchronized void managePrintQueue() throws InterruptedException {
+    public synchronized void managePrintQueue() throws Exception {
         if (isManagingQue) {
             logger.info("Print Queue ist bereits aktiv. Kein neuer Aufruf nötig.");
             return;
@@ -61,11 +63,11 @@ public class QueManager {
 
         try {
             while (!fileQueCollection.isQueEmpty()) {
-                if (!isPrinterConnected()) {
-                    logger.warn("Drucker ist nicht verbunden. Warte auf Verbindung...");
-                    Thread.sleep(WAIT_TIME_MS); // Warten, bevor erneut überprüft wird
-                    continue; // Nächste Iteration der Schleife
-                }
+//                if (!isPrinterConnected()) {
+//                    logger.warn("Drucker ist nicht verbunden. Warte auf Verbindung...");
+//                    Thread.sleep(WAIT_TIME_MS); // Warten, bevor erneut überprüft wird
+//                    continue; // Nächste Iteration der Schleife
+//                }
 
                 PrinterState status = getPrinterStatus();
                 logger.info("Printer Status: {}", status);
@@ -137,8 +139,8 @@ public class QueManager {
         return PrinterState.UNKNOWN;
     }
 
-    private void startPrint(String filename) {
-        File file = new File(filename);
+    private void startPrint(String filename) throws Exception {
+        File file = minioService.loadFileFromBucket(filename);
 
         if (!file.exists() || !file.canRead()) {
             logger.error("Fehler: Die Datei {} existiert nicht oder kann nicht gelesen werden.", filename);

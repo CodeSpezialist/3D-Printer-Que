@@ -4,10 +4,30 @@
       "name": "octoprint.api-url",
       "type": "java.lang.String",
       "description": "API URL der Octoprint Instanz."
-  },
+    },
     {
       "name": "octoprint.api-key",
       "type": "java.lang.String",
       "description": "API Key der Octoprint Instanz."
+    },
+    {
+      "name": "minio.url",
+      "type": "java.lang.String",
+      "description": "Minio API URL."
+    },
+    {
+      "name": "minio.username",
+      "type": "java.lang.String",
+      "description": "Minio Username."
+    },
+    {
+      "name": "minio.password",
+      "type": "java.lang.String",
+      "description": "Minio Password."
+    },
+    {
+      "name": "minio.bucketName",
+      "type": "java.lang.String",
+      "description": "Bucket Name für die gcode Dateien."
     }
-] }
+  ] }

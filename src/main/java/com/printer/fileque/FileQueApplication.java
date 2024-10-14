@@ -2,6 +2,7 @@ package com.printer.fileque;
 
 import com.printer.fileque.entities.FileQueCollection;
 import com.printer.fileque.repos.PrintFileRepo;
+import com.printer.fileque.services.MinioService;
 import com.printer.fileque.services.QueManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,11 +23,13 @@ public class FileQueApplication implements CommandLineRunner {
 
     private final FileQueCollection fileQueCollection;
     private final PrintFileRepo printFileRepo;
+    private final MinioService minioService;
 
     @Autowired
-    public FileQueApplication(FileQueCollection fileQueCollection, PrintFileRepo printFileRepo) {
+    public FileQueApplication(FileQueCollection fileQueCollection, PrintFileRepo printFileRepo, MinioService minioService) {
         this.fileQueCollection = fileQueCollection;
         this.printFileRepo = printFileRepo;
+        this.minioService = minioService;
     }
 
     public static void main(String[] args) {
@@ -35,7 +38,7 @@ public class FileQueApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        QueManager queManager = new QueManager(octoprintApiUrl, octoprintApiKey, fileQueCollection, printFileRepo);
+        QueManager queManager = new QueManager(octoprintApiUrl, octoprintApiKey, fileQueCollection, printFileRepo, minioService);
         queManager.managePrintQueue();
     }
 }
