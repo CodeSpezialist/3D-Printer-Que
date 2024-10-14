@@ -4,8 +4,11 @@ import com.printer.fileque.dtos.ResponseDto;
 import com.printer.fileque.entities.FileQueCollection;
 import com.printer.fileque.entities.PrintFile;
 import com.printer.fileque.repos.PrintFileRepo;
+import com.printer.fileque.services.MinioService;
 import com.printer.fileque.services.QueManager;
 import com.printer.fileque.tools.ResponseDtoCreator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/que")
 public class FileQueController {
+
+    private static final Logger logger = LoggerFactory.getLogger(FileQueController.class);
 
     private final FileQueCollection fileQueCollection;
     private final PrintFileRepo printFileRepo;
@@ -30,6 +35,7 @@ public class FileQueController {
 
         PrintFile printFile = printFileRepo.save(new PrintFile(filename));
         fileQueCollection.addToPrintQue(printFile);
+        logger.info("Added new File to Printer Queue: "+ filename);
 
         new Thread(() -> {
             try {
