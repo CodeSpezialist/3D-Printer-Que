@@ -36,6 +36,7 @@ jobs:
 
       - name: Build Image
         run: |
+          cd octoprint
           docker build -t registry.kedi-server.de/octoprint:latest .
 
       - name: Push Image
