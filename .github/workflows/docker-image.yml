@@ -1,0 +1,26 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: ["master"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+
+  build-image:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        run: |
+          docker build -t registry.kedi-server.de/printer-que:latest .
+
+      - name: Push Image to Registry
+        run: |
+          docker push registry.kedi-server.de/printer-que:latest

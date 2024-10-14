@@ -63,11 +63,11 @@ public class QueManager {
 
         try {
             while (!fileQueCollection.isQueEmpty()) {
-//                if (!isPrinterConnected()) {
-//                    logger.warn("Drucker ist nicht verbunden. Warte auf Verbindung...");
-//                    Thread.sleep(WAIT_TIME_MS); // Warten, bevor erneut überprüft wird
-//                    continue; // Nächste Iteration der Schleife
-//                }
+                if (!isPrinterConnected()) {
+                    logger.warn("Drucker ist nicht verbunden. Warte auf Verbindung...");
+                    Thread.sleep(WAIT_TIME_MS); // Warten, bevor erneut überprüft wird
+                    continue; // Nächste Iteration der Schleife
+                }
 
                 PrinterState status = getPrinterStatus();
                 logger.info("Printer Status: {}", status);
