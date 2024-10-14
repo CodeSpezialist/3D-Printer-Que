@@ -21,6 +21,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
+import java.util.List;
 
 @Component
 public class QueManager {
@@ -45,10 +46,13 @@ public class QueManager {
         this.octoprintApiKey = octoprintApiKey;
         this.fileQueCollection = fileQueCollection;
         this.printFileRepo = printFileRepo;
+
+        List<PrintFile> printFiles = printFileRepo.findAll();
+        fileQueCollection.setPrintQue(printFiles);
     }
 
     public synchronized void managePrintQueue() throws InterruptedException {
-        if(isManagingQue) {
+        if (isManagingQue) {
             logger.info("Print Queue ist bereits aktiv. Kein neuer Aufruf nötig.");
             return;
         }
@@ -84,7 +88,7 @@ public class QueManager {
 
                 Thread.sleep(WAIT_TIME_MS);
             }
-        }finally {
+        } finally {
             isManagingQue = false;
         }
     }
