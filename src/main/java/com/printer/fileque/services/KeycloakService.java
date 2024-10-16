@@ -11,8 +11,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.security.SecureRandom;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
