@@ -6,9 +6,9 @@ services:
       - "3306:3306"
     environment:
       - MYSQL_DATABASE=printerque
-      - MYSQL_PASSWORD=Password1
+      - MYSQL_PASSWORD=W7UDz^%Fj@lkwHi$
       - MYSQL_USER=root
-      - MYSQL_ROOT_PASSWORD=Password1
+      - MYSQL_ROOT_PASSWORD=W7UDz^%Fj@lkwHi$
     restart: unless-stopped
     volumes:
       - printer-que-db:/var/lib/mysql
