@@ -5,7 +5,7 @@ import com.printer.fileque.dtos.ResponseDto;
 import com.printer.fileque.entities.FileQueCollection;
 import com.printer.fileque.entities.PrintFile;
 import com.printer.fileque.repos.PrintFileRepo;
-import com.printer.fileque.services.MinioService;
+import com.printer.fileque.services.AccessTokenService;
 import com.printer.fileque.services.QueManager;
 import com.printer.fileque.tools.ResponseDtoCreator;
 import org.slf4j.Logger;
@@ -25,7 +25,7 @@ public class FileQueController {
     private final QueManager queManager;
 
     @Autowired
-    public FileQueController(FileQueCollection fileQueCollection, PrintFileRepo printFileRepo, QueManager queManager) {
+    public FileQueController(FileQueCollection fileQueCollection, PrintFileRepo printFileRepo, QueManager queManager, AccessTokenService accessTokenService) {
         this.fileQueCollection = fileQueCollection;
         this.printFileRepo = printFileRepo;
         this.queManager = queManager;
@@ -50,5 +50,6 @@ public class FileQueController {
 
         ResponseDto<String> responseDto = ResponseDtoCreator.createResponseDto("File added to queue: " + printFileDto.getFilename());
         return ResponseEntity.ok(responseDto);
+
     }
 }

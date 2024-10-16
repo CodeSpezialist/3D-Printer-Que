@@ -1,6 +1,7 @@
 package com.printer.fileque.services;
 
 import com.printer.fileque.dtos.KeycloakTokenResponse;
+import com.printer.fileque.dtos.KeycloakUserInfoResponseDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -11,7 +12,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.security.SecureRandom;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +22,6 @@ public class KeycloakService {
     private final RestTemplate restTemplate;
 
     private static final Logger logger = LoggerFactory.getLogger(KeycloakService.class);
-
-    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+<>?";
-    private static final SecureRandom random = new SecureRandom();
 
     @Autowired
     public KeycloakService(RestTemplate restTemplate) {
@@ -39,18 +36,6 @@ public class KeycloakService {
 
     @Value("${keycloak.resource}")
     private String frontendClientId;
-
-    @Value("${keycloak.backend-client}")
-    private String backendClientId;
-
-    @Value("${keycloak.client-secret}")
-    private String clientSecret;
-
-    @Value("${keycloak.admin-username}")
-    private String adminUserName;
-
-    @Value("${keycloak.admin-password}")
-    private String adminPassword;
 
     public KeycloakTokenResponse loginAndGetToken(String userName, String password) {
         String fullApiUrl = keycloakUrl + "/realms/" + realmName + "/protocol/openid-connect/token";
@@ -75,49 +60,28 @@ public class KeycloakService {
         }
     }
 
-    public boolean isTokenValid(String accessToken) {
-        String fullApiUrl = keycloakUrl + "/realms/" + realmName + "/protocol/openid-connect/token/introspect";
+    public KeycloakUserInfoResponseDto getUserInfoFromKeycloak(String authToken) {
+        // Definiere die URL für den Userinfo-Endpunkt
+        String userInfoUrl = keycloakUrl + "/realms/" + realmName + "/protocol/openid-connect/userinfo";
 
+        // Setze die Header für die Anfrage
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setBearerAuth(authToken);
 
-        MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
-        data.add("token", accessToken);
-        data.add("client_id", backendClientId);
-        data.add("client_secret", clientSecret);
+        // Erstelle die Anfrage mit Headern
+        HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        HttpEntity<MultiValueMap<String, String>> requestData = new HttpEntity<>(data, headers);
+        // Verwende RestTemplate, um die Anfrage zu senden
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<KeycloakUserInfoResponseDto> response = restTemplate.exchange(
+                userInfoUrl, HttpMethod.GET, entity, KeycloakUserInfoResponseDto.class);
 
-        try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(fullApiUrl, requestData, Map.class);
-            Map responseBody = response.getBody();
-            return responseBody != null && Boolean.TRUE.equals(responseBody.get("active"));
-        } catch (RestClientException e) {
-            logger.error("Ein Fehler ist aufgetreten: ", e);
-            return false;
-        }
-    }
-
-    private KeycloakTokenResponse loginAndGetTokenFromMasterRealm() {
-        String masterRealmUrl = keycloakUrl + "/realms/master/protocol/openid-connect/token";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
-
-        MultiValueMap<String, String> data = new LinkedMultiValueMap<>();
-        data.add("grant_type", "password");
-        data.add("client_id", "admin-cli");
-        data.add("username", adminUserName);
-        data.add("password", adminPassword);
-
-        HttpEntity<MultiValueMap<String, String>> requestData = new HttpEntity<>(data, headers);
-
-        try {
-            ResponseEntity<KeycloakTokenResponse> response = restTemplate.postForEntity(masterRealmUrl, requestData, KeycloakTokenResponse.class);
+        // Überprüfe, ob die Anfrage erfolgreich war und gib die Benutzerinformationen zurück
+        if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
-        } catch (RestClientException e) {
-            logger.error("Fehler beim Abrufen des Tokens für den Master-Realm: ", e);
-            return null;
+        } else {
+            // Handle Fehlerfall (z.B. throw Exception oder return null)
+            throw new RuntimeException("Failed to fetch user info: " + response.getStatusCode());
         }
     }
 }

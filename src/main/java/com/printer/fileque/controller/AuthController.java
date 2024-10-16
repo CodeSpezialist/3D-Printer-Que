@@ -1,11 +1,12 @@
 package com.printer.fileque.controller;
 
 import com.printer.fileque.dtos.KeycloakTokenResponse;
+import com.printer.fileque.dtos.KeycloakUserInfoResponseDto;
 import com.printer.fileque.dtos.LoginDto;
 import com.printer.fileque.dtos.ResponseDto;
-import com.printer.fileque.entities.User;
+import com.printer.fileque.entities.AccessToken;
+import com.printer.fileque.services.AccessTokenService;
 import com.printer.fileque.services.KeycloakService;
-import com.printer.fileque.services.UserService;
 import com.printer.fileque.tools.ResponseDtoCreator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,54 +20,42 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/token")
 @CrossOrigin(origins = "*")
 @Tag(name = "Auth Controller", description = "Controller für die Authentifizierung und Registrierung von Usern")
 public class AuthController {
 
     private final KeycloakService keycloakService;
-    private final UserService userService;
+    private final AccessTokenService accessTokenService;
 
     @Autowired
-    public AuthController(KeycloakService keycloakService, UserService userService) {
+    public AuthController(KeycloakService keycloakService, AccessTokenService accessTokenService) {
         this.keycloakService = keycloakService;
-        this.userService = userService;
+        this.accessTokenService = accessTokenService;
     }
 
-    @PostMapping("/login")
-    @Operation(summary = "Den User anmelden", description = "Ermöglicht den Login eines Nutzers und gibt einen Token zurück!")
+    @PostMapping("/generate")
+    @Operation(summary = "Access Token generieren", description = "Generiert einen Access Token, mit welcher auf die API der PrinterQue zugriffen werden kann.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Erfolgreich abgerufen"),
             @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = ResponseDto.class))),
             @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ResponseDto.class))),
             @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = ResponseDto.class))),
     })
-    public ResponseEntity<ResponseDto<KeycloakTokenResponse>> login(@RequestBody LoginDto loginDto) {
+    public ResponseEntity<ResponseDto<AccessToken>> login(@RequestBody LoginDto loginDto) {
         KeycloakTokenResponse tokenResponse = keycloakService.loginAndGetToken(loginDto.getUserName(), loginDto.getPassword());
-        if (tokenResponse != null) {
-            ResponseDto<KeycloakTokenResponse> responseDto = ResponseDtoCreator.createResponseDto(tokenResponse);
+        KeycloakUserInfoResponseDto userInfoResponseDto = keycloakService.getUserInfoFromKeycloak(tokenResponse.getAccess_token());
+        if (tokenResponse.getExpires_in() > 10) {
+            AccessToken accessToken = accessTokenService.createNewAccessToken(userInfoResponseDto.getEmail());
+            ResponseDto<AccessToken> responseDto = ResponseDtoCreator.createResponseDto(accessToken);
             return ResponseEntity.ok(responseDto);
         } else {
-            ResponseDto<KeycloakTokenResponse> responseDto = ResponseDto.<KeycloakTokenResponse>builder()
+            ResponseDto<AccessToken> responseDto = ResponseDto.<AccessToken>builder()
                     .success(false)
                     .message("Anmeldedaten sind falsch,bitte überprüfen sie diese!")
                     .data(null)
                     .build();
             return new ResponseEntity<>(responseDto, HttpStatus.UNAUTHORIZED);
         }
-    }
-
-    @GetMapping("/getUserData")
-    @Operation(summary = "Load User Data", description = "Ermöglicht es die Daten des aktuell angemeldeten Users zu laden")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Erfolgreich abgerufen"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = ResponseDto.class))),
-    })
-    public ResponseEntity<ResponseDto<User>> loadUserData() {
-        User user = userService.getLoggedUser();
-        ResponseDto<User> responseDto = ResponseDtoCreator.createResponseDto(user);
-        return ResponseEntity.ok(responseDto);
     }
 }
