@@ -22,3 +22,9 @@ services:
     restart: always
     networks:
       - printer-que
+
+volumes:
+  octoprint:
+
+networks:
+  printer-que:
