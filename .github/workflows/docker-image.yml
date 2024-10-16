@@ -27,7 +27,7 @@ jobs:
           docker push registry.kedi-server.de/printer-que:latest
 
   deploy:
-    needs: build-image
+    needs: build-que-image
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Portainer Webhook
