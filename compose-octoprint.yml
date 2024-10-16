@@ -1,0 +1,24 @@
+services:
+  reverse_proxy:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    environment:
+      DB_SQLITE_FILE: "/data/database.sqlite"
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+
+  octoprint:
+    container_name: octoprint
+    image: octoprint/octoprint
+    ports:
+      - "5000:80"
+    volumes:
+      - octoprint:/octoprint
+    restart: always
+    networks:
+      - printer-que
