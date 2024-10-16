@@ -25,3 +25,11 @@ jobs:
       - name: Push Image to Registry
         run: |
           docker push registry.kedi-server.de/printer-que:latest
+
+  deploy:
+    needs: build-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Portainer Webhook
+        run: |
+          curl -X POST -H "Content-Type: application/json" -d '{"key": "value"}' https://portainer.kedi-server.de/api/stacks/webhooks/0a29ee89-01ed-4da6-8920-018ee98aed5f
