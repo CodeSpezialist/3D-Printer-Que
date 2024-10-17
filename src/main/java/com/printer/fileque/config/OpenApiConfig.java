@@ -18,7 +18,7 @@ public class OpenApiConfig {
                         new Info()
                                 .title("Printer Que API DOC")
                                 .version("0.0.1")
-                                .description("Dies ist die API Dokumentation für das Printer QUE")
+                                .description("Dies ist die API Dokumentation für die Printer QUE. Hier kann ein API-Token für das Tool generiert werden und neue Files an die PrinterQue gesendet werden.\n\n Für einen Account um dich hier zu Verifizieren melde dich bei something@kenosserver.de mit deinen Daten und deiner Begründung warum du hier zugriff bekommen solltest.")
                 )
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components().addSecuritySchemes("bearerAuth",

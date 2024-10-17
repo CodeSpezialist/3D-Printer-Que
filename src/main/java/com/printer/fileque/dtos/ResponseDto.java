@@ -10,7 +10,7 @@ import lombok.*;
 public class ResponseDto<T> {
     @Schema(description = "Gibt an, ob die Operation erfolgreich war")
     private boolean success;
-    @Schema(description = "Die Nachricht zur Operation")
+    @Schema(description = "Die Nachricht zur Operation", example = "Deine Datei wurde erfolgreich in die Queue hinzugefügt.")
     private String message;
     @Schema(description = "Die Daten der Antwort")
     private T data;
