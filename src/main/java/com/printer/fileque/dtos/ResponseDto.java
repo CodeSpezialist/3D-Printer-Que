@@ -7,6 +7,7 @@ import lombok.*;
 @Setter
 @Builder
 @AllArgsConstructor
+@Schema(hidden = true)
 public class ResponseDto<T> {
     @Schema(description = "Gibt an, ob die Operation erfolgreich war")
     private boolean success;

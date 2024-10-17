@@ -1,6 +1,7 @@
 package com.printer.fileque.entities;
 
 import com.printer.fileque.dtos.NewPrintFileDto;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
+@Schema(hidden = true)
 public class PrintFile {
 
     @Id

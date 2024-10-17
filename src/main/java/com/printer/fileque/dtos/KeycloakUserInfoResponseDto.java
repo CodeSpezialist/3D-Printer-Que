@@ -1,5 +1,6 @@
 package com.printer.fileque.dtos;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 @Getter
@@ -7,6 +8,7 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(hidden = true)
 public class KeycloakUserInfoResponseDto {
     private String sub;
     private String name;

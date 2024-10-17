@@ -1,6 +1,7 @@
 package com.printer.fileque.entities;
 
 import com.printer.fileque.tools.TokenGenerator;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,6 +17,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "access_tokens")
+@Schema(hidden = true)
 public class AccessToken {
 
     @Id
