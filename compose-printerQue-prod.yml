@@ -6,9 +6,9 @@ services:
       - "3345:3306"
     environment:
       - MYSQL_DATABASE=printerque
-      - MYSQL_PASSWORD=W7UDz^%Fj@lkwHi$
-      - MYSQL_USER=root
-      - MYSQL_ROOT_PASSWORD=W7UDz^%Fj@lkwHi$
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
     restart: unless-stopped
     volumes:
       - printer-que-db:/var/lib/mysql
@@ -30,6 +30,9 @@ services:
       - MINIO_USERNAME=${MINIO_USERNAME}
       - MINIO_PASSWORD=${MINIO_PASSWORD}
       - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME}
+      - KEYCLOAK_AUTH_SERVER_URL=${KEYCLOAK_AUTH_SERVER_URL}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - KEYCLOAK_RESOURCE=${KEYCLOAK_RESOURCE}
     restart: unless-stopped
     depends_on:
       - database
